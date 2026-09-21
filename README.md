@@ -46,7 +46,8 @@ xcore-skills/
 └── skills/
     ├── mindustry-api/
     ├── avaje-inject/
-    └── xcore-cloud-mindustry/
+    ├── xcore-cloud-mindustry/
+    └── xcore-client-mod-testing/
 ```
 
 ## Initial skills
@@ -54,3 +55,4 @@ xcore-skills/
 - `mindustry-api` — Mindustry + Arc server-side plugin API reference
 - `avaje-inject` — Avaje Inject compile-time DI reference with XCore patterns
 - `xcore-cloud-mindustry` — Incendo Cloud + cloud-mindustry + XCore command infrastructure guidance
+- `xcore-client-mod-testing` — Mindustry client mod testing, automated DevHarness screenshot capture, mobile emulation, and release stripping
