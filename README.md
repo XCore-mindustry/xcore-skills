@@ -52,24 +52,32 @@ xcore-skills/
     ├── xcore-mindustry-concurrency/
     ├── xcore-protocol-evolution/
     ├── xcore-python-services/
-    └── xcore-ui-architecture/
+    ├── xcore-ui-architecture/
+    ├── xcore-mindustry-testkit/
+    └── xcore-i18n-flubundle/
 ```
 
 ## Skills Overview
 
 ### Mindustry & Arc Framework
+
 - `mindustry-api` — Mindustry + Arc server-side plugin API reference (Call, Vars, Groups, events, networking)
 - `xcore-mindustry-concurrency` — Rules for thread safety, non-blocking main loop, async I/O, and Redis Streams
 
-### Tooling & Build System
+### Tooling, Testing & Build System
+
 - `xcore-gradle-toxopid` — Gradle & Toxopid guidelines for Java 25 server plugins and Java 17/Android client mods
 - `xcore-client-mod-testing` — Client mod automated visual testing, DevHarness framebuffer capture, and release stripping
+- `xcore-mindustry-testkit` — Deterministic headless testing for Mindustry plugins, virtual UI event loop, and client simulation
 
-### Dependency Injection & Commands
+### Dependency Injection, Commands & Localization
+
 - `avaje-inject` — Avaje Inject compile-time DI reference with XCore patterns and BeanScope
 - `xcore-cloud-mindustry` — Incendo Cloud v2 + cloud-mindustry command infrastructure and controller patterns
+- `xcore-i18n-flubundle` — Project Fluent (`.ftl`) localization engine for Mindustry, bundle contexts, and player delivery
 
-### UI & Services Ecosystem
+### UI, Protocol & Services Ecosystem
+
 - `xcore-ui-architecture` — Reactive server-driven UI architecture (Elm/MVI flow, record lenses, slots)
 - `xcore-protocol-evolution` — Cross-service protocol evolution workflow (`xcore-protocol` schemas, fixtures, codegen)
 - `xcore-python-services` — Standards and testing procedures for Python services (`uv`, `pytest`, `ruff`, Prometheus)
