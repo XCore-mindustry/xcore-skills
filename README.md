@@ -47,12 +47,29 @@ xcore-skills/
     ├── mindustry-api/
     ├── avaje-inject/
     ├── xcore-cloud-mindustry/
-    └── xcore-client-mod-testing/
+    ├── xcore-client-mod-testing/
+    ├── xcore-gradle-toxopid/
+    ├── xcore-mindustry-concurrency/
+    ├── xcore-protocol-evolution/
+    ├── xcore-python-services/
+    └── xcore-ui-architecture/
 ```
 
-## Initial skills
+## Skills Overview
 
-- `mindustry-api` — Mindustry + Arc server-side plugin API reference
-- `avaje-inject` — Avaje Inject compile-time DI reference with XCore patterns
-- `xcore-cloud-mindustry` — Incendo Cloud + cloud-mindustry + XCore command infrastructure guidance
-- `xcore-client-mod-testing` — Mindustry client mod testing, automated DevHarness screenshot capture, mobile emulation, and release stripping
+### Mindustry & Arc Framework
+- `mindustry-api` — Mindustry + Arc server-side plugin API reference (Call, Vars, Groups, events, networking)
+- `xcore-mindustry-concurrency` — Rules for thread safety, non-blocking main loop, async I/O, and Redis Streams
+
+### Tooling & Build System
+- `xcore-gradle-toxopid` — Gradle & Toxopid guidelines for Java 25 server plugins and Java 17/Android client mods
+- `xcore-client-mod-testing` — Client mod automated visual testing, DevHarness framebuffer capture, and release stripping
+
+### Dependency Injection & Commands
+- `avaje-inject` — Avaje Inject compile-time DI reference with XCore patterns and BeanScope
+- `xcore-cloud-mindustry` — Incendo Cloud v2 + cloud-mindustry command infrastructure and controller patterns
+
+### UI & Services Ecosystem
+- `xcore-ui-architecture` — Reactive server-driven UI architecture (Elm/MVI flow, record lenses, slots)
+- `xcore-protocol-evolution` — Cross-service protocol evolution workflow (`xcore-protocol` schemas, fixtures, codegen)
+- `xcore-python-services` — Standards and testing procedures for Python services (`uv`, `pytest`, `ruff`, Prometheus)

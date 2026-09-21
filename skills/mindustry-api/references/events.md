@@ -30,6 +30,19 @@ Events.on(PlayerJoin.class, listener);
 Events.remove(PlayerJoin.class, listener);  // must be same reference
 ```
 
+### Gotcha: Removing Class Listeners vs Trigger Runnables
+- `Events.remove(Class<T>, Cons<T>)` works **only** for class-based listeners registered via `Events.on(Class<T>, Cons<T>)`.
+- `Events.run(Object trigger, Runnable)` registers a runnable for an enum trigger (e.g. `Trigger.update`, `Trigger.uiDrawEnd`). **Arc does NOT provide a method to remove individual Trigger runnables!**
+- **Solution for one-time or cancelable triggers**: Use a boolean guard flag or schedule with `Time.runTask`:
+  ```java
+  boolean[] done = {false};
+  Events.run(Trigger.uiDrawEnd, () -> {
+      if (done[0]) return;
+      done[0] = true;
+      // one-time execution logic
+  });
+  ```
+
 ## Important behavior
 
 - **Not thread-safe** — register and fire only on the main game thread. Use `Core.app.post()` from other threads.
