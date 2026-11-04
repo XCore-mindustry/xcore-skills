@@ -81,18 +81,31 @@ manager.registerCommandPostProcessor(context -> {
 
 ## Caption localization pattern
 
+XCore renders captions with a caption formatter rather than a caption provider, so the bundle message gets the
+caption variables as arguments (see `BundleCaptionFormatter`):
+
 ```java
-manager.captionRegistry().registerProvider((caption, recipient) -> {
-  String key = caption.key().replace(".", "-");
-  if (recipient.isPlayer()) {
-    var session = sessionService.get().get(recipient.player());
-    if (session != null) {
-      return session.locale().format(key, args);
+Set<String> numeric = Set.of("count", "limit", "min", "max", "page", "pages", "next");
+
+manager.captionFormatter((captionKey, recipient, defaultText, variables) -> {
+  String key = CloudCaptionConfigurer.bundleKey(captionKey);   // "." and "_" become "-"
+  if (bundle.has(recipient.locale(), key)) {                   // the chain format() will use
+    Map<String, Object> args = new LinkedHashMap<>();
+    for (CaptionVariable v : variables) {
+      // numbers for plurals and NUMBER(); everything else is escaped typed text
+      args.put(v.key(), numeric.contains(v.key()) ? Long.valueOf(v.value()) : Markup.escape(v.value()));
     }
+    return bundle.format(recipient.locale(), key, args);
   }
-  return bundle.format(recipient.locale(), key, args);
+  List<CaptionVariable> escaped = variables.stream()
+      .map(v -> CaptionVariable.of(v.key(), Markup.escape(v.value())))
+      .toList();
+  return CaptionFormatter.<XCoreSender>placeholderReplacing()
+      .formatCaption(captionKey, recipient, defaultText, escaped);
 });
 ```
+
+`BundleCaptionFormatter` does this, and also falls back to text when a numeric variable is not a number.
 
 ## Centralized exception handler pattern
 

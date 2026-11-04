@@ -76,14 +76,19 @@ Examples:
 
 Cloud captions are the main hook for localized infrastructure messages.
 
-In XCore, `CloudCaptionConfigurer` maps Cloud caption keys to FluBundle keys and resolves placeholders through `BundlePlaceholderRegistry`.
+In XCore, `CloudCaptionConfigurer` installs `BundleCaptionFormatter` as the manager's caption formatter. A
+Cloud caption key maps to a FluBundle key with `CloudCaptionConfigurer.bundleKey` (`.` and `_` become `-`, so
+`argument.parse.failure.player_info` is `argument-parse-failure-player-info`).
 
-Important pattern:
-
-- convert `.` keys to `-`
-- resolve placeholders centrally
-- use session locale when player session exists
-- fall back to bundle locale/default locale when needed
+- When the bundle has the key, the message is formatted from the bundle in the recipient's locale
+  (`XCoreSender.locale()`: session language, else client locale, else the default locale for the console), with
+  the caption variables as real arguments. `count`, `limit`, `min`, `max`, `page`, `pages` and `next` are passed
+  as numbers, so plural selectors and `NUMBER()` work on them; every other value is text and is escaped, because
+  it is usually what the sender typed.
+- Otherwise the caption's default text (Cloud or cloud-mindustry English) is used, with Cloud's `<variable>`
+  placeholders filled with escaped values. Never a raw key.
+- cloud-mindustry's own captions are listed in `MindustryCaptionKeys` and `SelectorCaptionKeys`;
+  XCore's `FtlBundleCompilationTest` checks that en/ru/uk_UA translate all of them except `mindustry.help.*`.
 
 ## Exception handling
 
@@ -102,11 +107,18 @@ XCore centralizes exception handling in `CloudExceptionConfigurer`.
 
 It handles:
 
-- `XCoreCommandException`
-- invalid syntax
-- no permission
-- parser/caption-aware parse failures
-- generic fallback exceptions
+- `XCoreCommandException` (its key and args; silent ones send nothing)
+- invalid syntax → `error-invalid-syntax`
+- no permission → `error-access-denied`
+- parse failures: a `ParserException` cause shows its caption through the bundle when XCore translates the key,
+  otherwise the caption's default text; any other cause shows `error-argument-parse-generic`
+- everything else → `error-internal`, with the stack trace logged
+
+Players and the console get the same localized messages (the console in the default locale). XCore never
+sends an exception's own text, because it can carry internal details; it goes to the log. The one way a failure
+message can still reach the sender is a caption that carries it as a variable, such as Cloud's
+`argument.parse.failure.aggregate.failure` (`failure`) or `exception.invalid_argument` (`cause`): keep those
+captions generic in the bundle, or leave the variable out.
 
 ### Important design rule
 
