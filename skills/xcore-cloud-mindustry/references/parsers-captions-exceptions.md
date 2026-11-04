@@ -76,14 +76,21 @@ Examples:
 
 Cloud captions are the main hook for localized infrastructure messages.
 
-In XCore, `CloudCaptionConfigurer` maps Cloud caption keys to FluBundle keys and resolves placeholders through `BundlePlaceholderRegistry`.
+In XCore, `CloudCaptionConfigurer` registers a caption provider that maps a Cloud caption key to a FluBundle key
+(`CloudCaptionConfigurer.bundleKey`: `.` and `_` become `-`, so `argument.parse.failure.player_info` is
+`argument-parse-failure-player-info`). It renders the bundle message with every `$variable` replaced by a
+`<variable>` placeholder, which Cloud then fills with the caption variables.
 
 Important pattern:
 
-- convert `.` keys to `-`
-- resolve placeholders centrally
-- use session locale when player session exists
-- fall back to bundle locale/default locale when needed
+- return `null` from the provider when the bundle has no such key, so the English default of Cloud or
+  cloud-mindustry applies instead of a raw key
+- the message is rendered in the recipient's locale (`XCoreSender.locale()`: session language, else client locale,
+  else the default locale for the console)
+- because the values arrive as text placeholders, plural selectors and `NUMBER()` on caption variables do not work
+  on this path; keep caption messages free of them
+- cloud-mindustry's own captions are listed in `MindustryCaptionKeys` and `SelectorCaptionKeys`;
+  XCore's `FtlBundleCompilationTest` checks that en/ru/uk_UA translate all of them except `mindustry.help.*`
 
 ## Exception handling
 
@@ -102,11 +109,15 @@ XCore centralizes exception handling in `CloudExceptionConfigurer`.
 
 It handles:
 
-- `XCoreCommandException`
-- invalid syntax
-- no permission
-- parser/caption-aware parse failures
-- generic fallback exceptions
+- `XCoreCommandException` (its key and args; silent ones send nothing)
+- invalid syntax → `error-invalid-syntax`
+- no permission → `error-access-denied`
+- parse failures: a `ParserException` cause shows its caption through the bundle when XCore translates the key,
+  otherwise the caption's default text; any other cause shows `error-argument-parse-generic`
+- everything else → `error-internal`, with the stack trace logged
+
+Players and the console get the same localized messages (the console in the default locale). The text of an
+exception is never sent to the sender, because it can carry internal details; it goes to the log.
 
 ### Important design rule
 

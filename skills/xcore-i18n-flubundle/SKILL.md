@@ -1,158 +1,150 @@
 ---
 name: xcore-i18n-flubundle
 description: >
-  Standards and usage guide for FluBundle (Project Fluent localization) in Mindustry plugins and mods on Java 25.
-  Covers .ftl file organization, Fluent syntax (parameters, plurals, select, term references), Bundle initialization,
-  Localizer, BundleContext, locale normalization, player locale resolution, and Avaje Inject integration.
-  Use whenever adding, editing, or formatting translated messages, multi-language UI, or localization bundles in XCore.
+  Standards and usage guide for FluBundle 2.x (Project Fluent localization) in XCore Mindustry plugins on Java 25.
+  Covers .ftl file naming and syntax, the shared Bundle, Messenger/Audience delivery, Args and Text, player and
+  pre-join locale resolution, escaping player text, DURATION/COLOR/STRIP/ESCAPE, vanilla content names, missing keys,
+  and the build-time checks. Use whenever adding, editing, or formatting translated messages, multi-language UI,
+  or localization bundles in XCore, HexedCore, TileLogger or XCore Sentinel.
 ---
 
-# FluBundle: Fluent Localization Guide for Mindustry
+# FluBundle: Fluent localization for XCore plugins
 
-`FluBundle` (`com.ospx:flubundle`) is the standard localization engine for Mindustry plugins and mods in XCore. It replaces legacy `.properties` files with modern [Project Fluent](https://projectfluent.org/) (`.ftl`) syntax, supporting asymmetric plurals, parameters, gender, terms, and locale fallbacks.
+`FluBundle` (`com.ospx:flubundle`, source in `xcore/libs/flubundle`) renders [Project Fluent](https://projectfluent.org/)
+(`.ftl`) messages for Mindustry servers: plurals, selectors, terms, locale fallback, and delivery to players in
+the language each of them selected.
 
----
-
-## 1. When to Use
-
-Use this skill when:
-
-- Creating or editing localization messages in `bundles/*.ftl`.
-- Formatting localized messages for players (`bundle.format(...)`, `Localizer`).
-- Handling player language detection and per-player message delivery.
-- Setting up DI bindings for `Bundle` in Avaje Inject modules.
-
----
-
-## 2. Directory Structure & File Naming
-
-Localization files live inside `bundles/` in the mod or plugin resources:
+## 1. Files
 
 ```text
 src/main/resources/bundles/
-├── bundle.ftl       # Default fallback (English)
-├── bundle_en.ftl    # English
-├── bundle_uk.ftl    # Ukrainian
-├── bundle_ru.ftl    # Russian
-└── bundle_zh.ftl    # Chinese
+├── bundle_en.ftl      # base locale: every key must exist here
+├── bundle_ru.ftl
+├── bundle_uk_UA.ftl   # XCore aliases "uk" to uk_UA
+└── bundle_pt_BR.ftl
 ```
 
-FluBundle normalizes locale tags automatically: `en-US`, `en_US`, and `EN_us` all resolve properly.
+- The locale comes from the file name suffix (`bundle_en`, `bundle_uk_UA`). **A file without one (`bundle.ftl`)
+  is skipped** with a warning; there is no suffix-less default file.
+- Files of one locale (`bundle_en.ftl`, `menus_en.ftl`) load into the same bundle and see each other's ids.
+- All plugins share one bundle at runtime, so prefix keys per plugin (`hexed_...`, `tilelogger-...`). Loading
+  a key another plugin already defined overrides it and logs the override.
+- Fallback: exact locale → language (`pt_BR` → `pt`) → default locale (`en`) → missing-key policy.
 
----
-
-## 3. Fluent (.ftl) Syntax Guidelines
-
-### Simple Messages & Terms
-
-Terms start with `-` and cannot be queried directly from Java; they are referenced by other messages:
+## 2. Fluent syntax
 
 ```ftl
--server-name = XCore Network
+-server = XCore
 
-welcome = Welcome to { -server-name }!
-login-required = Please log in using /login <password>.
-```
-
-### Variables & Parameters
-
-Use `{ $varName }` for dynamic parameters:
-
-```ftl
-player-joined = [green]+[] { $playerName } joined the game.
-balance-info = Your balance: [gold]{ $amount }[] coins.
-```
-
-### Plurals & Select Expressions
-
-Fluent handles language-specific plural categories (`one`, `few`, `many`, `other`):
-
-```ftl
-ban-time-remaining =
-    { $count ->
-        [one] { $count } hour remaining
-       *[other] { $count } hours remaining
-    }
-
-blocks-destroyed =
-    { $count ->
-        [one] destroyed { $count } block
-        [few] destroyed { $count } blocks
-       *[other] destroyed { $count } blocks
-    }
-```
-
----
-
-## 4. Java API & Usage Patterns
-
-### A. Initialization & Loading
-
-```java
-// Create bundle instance (or use Bundle.INSTANCE)
-Bundle bundle = new Bundle();
-
-// Load all .ftl bundles from the plugin/mod classpath
-bundle.addSource(MyPlugin.class);
-
-// Configure locale aliases if needed
-bundle.addLocaleAlias("ua", "uk");
-```
-
-### B. Formatting Messages
-
-```java
-// 1. Direct formatting with Map arguments
-String text = bundle.format(Locale.forLanguageTag("uk"), "player-joined", Map.of("playerName", "Vova"));
-
-// 2. Localizer helper (bound to a specific locale)
-Localizer localizer = bundle.localizer(Locale.forLanguageTag("uk"));
-String welcome = localizer.format("welcome");
-
-// 3. Fallback behavior:
-// Exact locale -> Language locale -> Default bundle.ftl -> Missing key fallback
-```
-
-### C. Player Locale Resolution in Mindustry
-
-Mindustry players report their client locale in `player.locale` (e.g. `uk_UA`):
-
-```java
-public void notifyPlayer(Player player, String messageKey, Map<String, Object> args) {
-    Locale locale = Locale.forLanguageTag(player.locale.replace('_', '-'));
-    String formatted = bundle.format(locale, messageKey, args);
-    player.sendMessage(formatted);
+welcome = Welcome to { -server }, { $player }!
+blocks-destroyed = { $count ->
+    [one] destroyed { $count } block
+   *[other] destroyed { $count } blocks
 }
+ban-notice = Banned for { DURATION($seconds, style: "full", maxUnits: 2) }
+report = [scarlet]{ $reporter }[] reported: { ESCAPE($message) }
 ```
 
-### D. Avaje Inject Integration (`@Factory`)
+- Every select expression needs a `*` default variant; plural selects need `*[other]`.
+- Mindustry color tags (`[scarlet]`, `[]`) are plain text to Fluent.
+- Functions: `DURATION` (CLDR unit names; `style: "compact" | "full" | "timer"`, `unit`, `colored`, `maxUnits`),
+  `COLOR($x, color: "accent")`, `STRIP($x)` (removes color tags), `ESCAPE($x)` (shows `[` literally), plus
+  Fluent's `NUMBER` and `DATETIME`. Narrow and no-break spaces are replaced with spaces the client font can draw.
 
-Expose `Bundle` as a singleton bean in your DI configuration:
+## 3. The bundle in XCore
+
+XCore owns the bundle: `BundleFactory` provides `Bundle.INSTANCE` and a `Messenger` bean, and
+`SessionLocaleResolver` installs the player's selected language on it. Dependent plugins only add their files:
 
 ```java
-@Factory
-public class LocalizationFactory {
-
-    @Singleton
-    public Bundle bundle() {
-        Bundle bundle = new Bundle();
-        bundle.addSource(XcorePlugin.class);
-        return bundle;
-    }
-}
+// HexedCore, TileLogger, Sentinel: in the plugin's init, with the shared scope
+scope.get(Bundle.class).addSource(getClass());   // loads bundles/*.ftl from this plugin's jar
 ```
 
----
+Never create a `new Bundle()` in a plugin that runs next to XCore, and never parse `player.locale` yourself:
+both bypass the language the player chose in settings.
 
-## 5. Gradle Dependency
+## 4. Sending messages
+
+Prefer `Messenger`; it resolves each player's locale and renders a message once per locale:
+
+```java
+Messenger messenger = Messenger.of(bundle);                 // or inject XCore's bean
+messenger.to(player).send("welcome", Args.of("player", player.coloredName()));
+messenger.all().announce("server-restart-countdown", Args.of("seconds", 10));
+messenger.team(team).toast(Iconc.warning, "core-under-attack");
+messenger.filter(p -> p.admin).popup(text, Popup.at(Align.top).duration(5f));
+messenger.to(players).kick("subnet-denied");
+messenger.to(list).deliver(text, (player, message) -> customTransport(player, message));
+```
+
+Delivery methods: `send` (chat), `announce`, `infoMessage`, `hud`, `toast`, `label`, `popup`, `kick`, `deliver`.
+
+- `Args.of("k1", v1, "k2", v2)` (up to six pairs) or `Args.builder()`; `Bundle.args(...)` still works.
+- `Text.of(key, args)` is a message rendered later: return it from services and let the caller pick recipients.
+- Formatting a string: `bundle.format(bundle.locale(player), key, args)`; in commands `sender.send(key, args)` /
+  `sender.format(key, args)` (XCore's `XCoreSender`), which use the session language.
+- `Team` and `UnlockableContent` arguments (`Team.crux`, `UnitTypes.dagger`, `Blocks.router`) render as the
+  vanilla name in the recipient's language (`ContentNames.vanilla()`). A `Player` argument renders as `player.name`.
+
+## 5. Before the player joins
+
+Connection checks run before a `Player` exists; the resolver looks the language up by the packet's uuid:
+
+```java
+String reason = messenger.connecting(con, packet).format("whitelist-denied");
+messenger.connecting(con, packet).kick("ban-notice", Args.of("reason", Markup.escape(ban.reason)));
+Locale locale = bundle.locale(packet);
+```
+
+## 6. Text from players
+
+Chat, Discord messages, sign text and reasons typed by players can contain `[]` or color tags that recolor or
+close the rest of the line. Escape them: `ESCAPE($message)` in the FTL file, or `Markup.escape(text)` in Java.
+Do not escape values meant to be colored, such as `player.coloredName()`.
+
+## 7. Missing keys and errors
+
+- XCore sets `MissingKeyPolicy.logOnce()`: a missing key is logged once and rendered as the key itself.
+  Other policies: `returnKey()`, `bracketed()` (`⟦key⟧`), `throwing()` (tests).
+- Render errors (a missing `$variable`, a failing function) are logged once per key and locale;
+  `setFormatErrorHandler(...)` replaces that.
+- Introspection: `bundle.has(key)`, `bundle.has(locale, key)`, `bundle.variables(key)`, `bundle.keys(locale)`.
+
+## 8. Build-time checks
+
+Every plugin keeps a test like this (see `FtlBundleCompilationTest` in each repository):
+
+```java
+CompilationResult compiled = FtlCompiler.compile(Path.of("src/main/resources/bundles"));
+assertFalse(compiled.hasErrors(), compiled.formatReport());
+
+CompilationResult consistent = LocaleConsistencyChecker.check(Path.of("src/main/resources/bundles"), "en");
+assertFalse(consistent.hasErrors(), consistent.formatReport());
+```
+
+- `FtlCompiler`: syntax errors, unknown functions and options, select expressions without a default. In the
+  monorepo build it also rejects references to messages, terms or attributes the locale does not define and warns
+  about ids defined twice; allow ids from another plugin's bundle with
+  `FtlCompiler.builder().externalReferences("-xcore").build()`. Plugins on the released 2.1.3 get this with the
+  next release.
+- `LocaleConsistencyChecker`: a translation using a `$variable` the English message does not is an error;
+  dropped variables, orphan keys and untranslated keys are warnings.
+- `KeyConstantsGenerator` can generate a class of key constants from the base locale so a renamed key breaks
+  compilation (see the FluBundle README).
+
+## 9. Gradle
 
 ```kotlin
 repositories {
     maven("https://maven.x-core.org/releases")
-    maven("https://maven.x-core.org/snapshots")
 }
 
 dependencies {
-    implementation("com.ospx:flubundle:1.3")
+    // XCore ships FluBundle; dependent plugins compile against it
+    compileOnly("com.ospx:flubundle:2.1.3")
+    testImplementation("com.ospx:flubundle:2.1.3")
 }
 ```
+
+Inside the XCore monorepo use `project(":libs:flubundle")`. Upgrading from 1.x: `libs/flubundle/docs/migrating-to-2.0.md`.

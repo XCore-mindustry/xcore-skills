@@ -81,16 +81,20 @@ manager.registerCommandPostProcessor(context -> {
 
 ## Caption localization pattern
 
+As in XCore's `CloudCaptionConfigurer`:
+
 ```java
 manager.captionRegistry().registerProvider((caption, recipient) -> {
-  String key = caption.key().replace(".", "-");
-  if (recipient.isPlayer()) {
-    var session = sessionService.get().get(recipient.player());
-    if (session != null) {
-      return session.locale().format(key, args);
-    }
+  String key = CloudCaptionConfigurer.bundleKey(caption);  // "." and "_" become "-"
+  if (!bundle.has(key)) {
+    return null;                                           // keep the English default, not the raw key
   }
-  return bundle.format(recipient.locale(), key, args);
+  // $variables become <variable> placeholders that Cloud fills with the caption variables
+  var placeholders = new LinkedHashMap<String, Object>();
+  for (String name : bundle.variables(key)) {
+    placeholders.put(name, "<" + name + ">");
+  }
+  return bundle.format(recipient.locale(), key, placeholders);
 });
 ```
 

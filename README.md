@@ -74,7 +74,7 @@ xcore-skills/
 
 - `avaje-inject` — Avaje Inject compile-time DI reference with XCore patterns and BeanScope
 - `xcore-cloud-mindustry` — Incendo Cloud v2 + cloud-mindustry command infrastructure and controller patterns
-- `xcore-i18n-flubundle` — Project Fluent (`.ftl`) localization engine for Mindustry, bundle contexts, and player delivery
+- `xcore-i18n-flubundle` — FluBundle 2.x: Project Fluent (`.ftl`) bundles, the shared XCore bundle, Messenger delivery, escaping and build-time checks
 
 ### UI, Protocol & Services Ecosystem
 
