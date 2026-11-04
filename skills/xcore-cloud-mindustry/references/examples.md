@@ -85,19 +85,27 @@ XCore renders captions with a caption formatter rather than a caption provider, 
 caption variables as arguments (see `BundleCaptionFormatter`):
 
 ```java
+Set<String> numeric = Set.of("count", "limit", "min", "max", "page", "pages", "next");
+
 manager.captionFormatter((captionKey, recipient, defaultText, variables) -> {
   String key = CloudCaptionConfigurer.bundleKey(captionKey);   // "." and "_" become "-"
-  if (bundle.has(key)) {
+  if (bundle.has(recipient.locale(), key)) {                   // the chain format() will use
     Map<String, Object> args = new LinkedHashMap<>();
     for (CaptionVariable v : variables) {
-      args.put(v.key(), Markup.escape(v.value()));               // numeric ones as numbers in XCore
+      // numbers for plurals and NUMBER(); everything else is escaped typed text
+      args.put(v.key(), numeric.contains(v.key()) ? Long.valueOf(v.value()) : Markup.escape(v.value()));
     }
     return bundle.format(recipient.locale(), key, args);
   }
+  List<CaptionVariable> escaped = variables.stream()
+      .map(v -> CaptionVariable.of(v.key(), Markup.escape(v.value())))
+      .toList();
   return CaptionFormatter.<XCoreSender>placeholderReplacing()
-      .formatCaption(captionKey, recipient, defaultText, variables);
+      .formatCaption(captionKey, recipient, defaultText, escaped);
 });
 ```
+
+`BundleCaptionFormatter` does this, and also falls back to text when a numeric variable is not a number.
 
 ## Centralized exception handler pattern
 

@@ -41,7 +41,7 @@ blocks-destroyed = { $count ->
     [one] destroyed { $count } block
    *[other] destroyed { $count } blocks
 }
-ban-notice = Banned for { DURATION($seconds, style: "full", maxUnits: 2) }
+ban-notice = Banned for { DURATION($seconds, style: "full", maxUnits: 2) }: { ESCAPE($reason) }
 report = [scarlet]{ $reporter }[] reported: { ESCAPE($message) }
 ```
 
@@ -96,7 +96,7 @@ Connection checks run before a `Player` exists; the resolver looks the language 
 
 ```java
 String reason = messenger.connecting(con, packet).format("whitelist-denied");
-messenger.connecting(con, packet).kick("ban-notice", Args.of("reason", Markup.escape(ban.reason)));
+messenger.connecting(con, packet).kick("ban-notice", Args.of("seconds", ban.remainingSeconds(), "reason", ban.reason));
 Locale locale = bundle.locale(packet);
 ```
 

@@ -114,8 +114,11 @@ It handles:
   otherwise the caption's default text; any other cause shows `error-argument-parse-generic`
 - everything else → `error-internal`, with the stack trace logged
 
-Players and the console get the same localized messages (the console in the default locale). The text of an
-exception is never sent to the sender, because it can carry internal details; it goes to the log.
+Players and the console get the same localized messages (the console in the default locale). XCore never
+sends an exception's own text, because it can carry internal details; it goes to the log. The one way a failure
+message can still reach the sender is a caption that carries it as a variable, such as Cloud's
+`argument.parse.failure.aggregate.failure` (`failure`) or `exception.invalid_argument` (`cause`): keep those
+captions generic in the bundle, or leave the variable out.
 
 ### Important design rule
 
