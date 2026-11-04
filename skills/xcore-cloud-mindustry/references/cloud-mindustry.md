@@ -110,6 +110,8 @@ arguments accept `@s`, `@p`, `@r`, `@a`, `@e[...]`, player names and `#id`s. Fil
 `distance`/`r`, `x`/`y` (also `~` relative), `admin`, `name`, `limit`/`c`, `sort`
 (`nearest`, `furthest`, `random`, `health`, ...).
 
+- Player names with spaces work as typed when an online player has that name, or in quotes (`"Big Bob"`);
+  `PlayerNameInput.read(input, names)` does the same in custom parsers (XCore's `PlayerParser` uses it).
 - Resolve a selector with `selector.resolve(sender.getHandle())` (the `MindustrySender`, not `XCoreSender`).
 - For unit arguments, `@e` selects any unit; `@s`, `@p`, `@r`, `@a` and names select the units of those players
   (players without a unit are skipped).
@@ -138,7 +140,7 @@ back with `thenAcceptAsync(..., mgr.simulationExecutor())` before touching playe
 - `Team` (base teams; `MindustryCommandManager.ALL_TEAMS`, in XCore `@AllTeams`, for all 256),
   `UnitType`, `Block`, `Item`, `Liquid`, `StatusEffect` by internal name.
 - `Administration.PlayerInfo`: an offline record by UUID, any used name, `#id` if online, or IP from the console
-  only. Ambiguous names are an error; the argument is one token.
+  only. Ambiguous names are an error; names with spaces work as typed or quoted.
 
 ## Default error handling
 

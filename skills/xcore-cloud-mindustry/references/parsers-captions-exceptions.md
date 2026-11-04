@@ -76,21 +76,19 @@ Examples:
 
 Cloud captions are the main hook for localized infrastructure messages.
 
-In XCore, `CloudCaptionConfigurer` registers a caption provider that maps a Cloud caption key to a FluBundle key
-(`CloudCaptionConfigurer.bundleKey`: `.` and `_` become `-`, so `argument.parse.failure.player_info` is
-`argument-parse-failure-player-info`). It renders the bundle message with every `$variable` replaced by a
-`<variable>` placeholder, which Cloud then fills with the caption variables.
+In XCore, `CloudCaptionConfigurer` installs `BundleCaptionFormatter` as the manager's caption formatter. A
+Cloud caption key maps to a FluBundle key with `CloudCaptionConfigurer.bundleKey` (`.` and `_` become `-`, so
+`argument.parse.failure.player_info` is `argument-parse-failure-player-info`).
 
-Important pattern:
-
-- return `null` from the provider when the bundle has no such key, so the English default of Cloud or
-  cloud-mindustry applies instead of a raw key
-- the message is rendered in the recipient's locale (`XCoreSender.locale()`: session language, else client locale,
-  else the default locale for the console)
-- because the values arrive as text placeholders, plural selectors and `NUMBER()` on caption variables do not work
-  on this path; keep caption messages free of them
+- When the bundle has the key, the message is formatted from the bundle in the recipient's locale
+  (`XCoreSender.locale()`: session language, else client locale, else the default locale for the console), with
+  the caption variables as real arguments. `count`, `limit`, `min`, `max`, `page`, `pages` and `next` are passed
+  as numbers, so plural selectors and `NUMBER()` work on them; every other value is text and is escaped, because
+  it is usually what the sender typed.
+- Otherwise the caption's default text (Cloud or cloud-mindustry English) is used, with Cloud's `<variable>`
+  placeholders filled with escaped values. Never a raw key.
 - cloud-mindustry's own captions are listed in `MindustryCaptionKeys` and `SelectorCaptionKeys`;
-  XCore's `FtlBundleCompilationTest` checks that en/ru/uk_UA translate all of them except `mindustry.help.*`
+  XCore's `FtlBundleCompilationTest` checks that en/ru/uk_UA translate all of them except `mindustry.help.*`.
 
 ## Exception handling
 

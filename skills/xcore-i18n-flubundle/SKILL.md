@@ -84,6 +84,9 @@ Delivery methods: `send` (chat), `announce`, `infoMessage`, `hud`, `toast`, `lab
 - `Text.of(key, args)` is a message rendered later: return it from services and let the caller pick recipients.
 - Formatting a string: `bundle.format(bundle.locale(player), key, args)`; in commands `sender.send(key, args)` /
   `sender.format(key, args)` (XCore's `XCoreSender`), which use the session language.
+- A value that depends on the recipient's language: `Localized.by(locale -> teamsLine(alive, locale))`; a `Text`
+  argument (`Args.of("reason", Text.of("ban-reason-griefing"))`) is rendered in the same locale. Both still render
+  once per locale in a broadcast. (Monorepo build; dependent plugins with the next release.)
 - `Team` and `UnlockableContent` arguments (`Team.crux`, `UnitTypes.dagger`, `Blocks.router`) render as the
   vanilla name in the recipient's language (`ContentNames.vanilla()`). A `Player` argument renders as `player.name`.
 
@@ -116,9 +119,14 @@ Do not escape values meant to be colored, such as `player.coloredName()`.
 Every plugin keeps a test like this (see `FtlBundleCompilationTest` in each repository):
 
 ```java
+// monorepo build (XCore, TileLogger); dependent plugins with the next release
+BundleChecks.of(Path.of("src/main/resources/bundles"))
+        .requireKeys(List.of("en", "ru"), keysTheseLocalesMustTranslate)   // optional
+        .assertValid();
+
+// released 2.1.3
 CompilationResult compiled = FtlCompiler.compile(Path.of("src/main/resources/bundles"));
 assertFalse(compiled.hasErrors(), compiled.formatReport());
-
 CompilationResult consistent = LocaleConsistencyChecker.check(Path.of("src/main/resources/bundles"), "en");
 assertFalse(consistent.hasErrors(), consistent.formatReport());
 ```
@@ -130,8 +138,9 @@ assertFalse(consistent.hasErrors(), consistent.formatReport());
   next release.
 - `LocaleConsistencyChecker`: a translation using a `$variable` the English message does not is an error;
   dropped variables, orphan keys and untranslated keys are warnings.
-- `KeyConstantsGenerator` can generate a class of key constants from the base locale so a renamed key breaks
-  compilation (see the FluBundle README).
+- `KeyConstantsGenerator` generates a class with a constant per key and a typed method per message
+  (`BundleKeys.hexedCountdownTick(Object seconds)` returns a `Text`), so a renamed key or a missing argument
+  breaks compilation (see the FluBundle README; typed methods in the monorepo build).
 
 ## 9. Gradle
 

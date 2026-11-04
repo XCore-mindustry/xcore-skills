@@ -81,20 +81,21 @@ manager.registerCommandPostProcessor(context -> {
 
 ## Caption localization pattern
 
-As in XCore's `CloudCaptionConfigurer`:
+XCore renders captions with a caption formatter rather than a caption provider, so the bundle message gets the
+caption variables as arguments (see `BundleCaptionFormatter`):
 
 ```java
-manager.captionRegistry().registerProvider((caption, recipient) -> {
-  String key = CloudCaptionConfigurer.bundleKey(caption);  // "." and "_" become "-"
-  if (!bundle.has(key)) {
-    return null;                                           // keep the English default, not the raw key
+manager.captionFormatter((captionKey, recipient, defaultText, variables) -> {
+  String key = CloudCaptionConfigurer.bundleKey(captionKey);   // "." and "_" become "-"
+  if (bundle.has(key)) {
+    Map<String, Object> args = new LinkedHashMap<>();
+    for (CaptionVariable v : variables) {
+      args.put(v.key(), Markup.escape(v.value()));               // numeric ones as numbers in XCore
+    }
+    return bundle.format(recipient.locale(), key, args);
   }
-  // $variables become <variable> placeholders that Cloud fills with the caption variables
-  var placeholders = new LinkedHashMap<String, Object>();
-  for (String name : bundle.variables(key)) {
-    placeholders.put(name, "<" + name + ">");
-  }
-  return bundle.format(recipient.locale(), key, placeholders);
+  return CaptionFormatter.<XCoreSender>placeholderReplacing()
+      .formatCaption(captionKey, recipient, defaultText, variables);
 });
 ```
 
